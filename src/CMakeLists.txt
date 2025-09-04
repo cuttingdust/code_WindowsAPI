@@ -52,6 +52,7 @@ include(CommonTools)
 add_subdirectory(MessageBox)
 add_subdirectory(sizeof_windows)
 add_subdirectory(FindWindow)
+add_subdirectory(GetWindowThreadProcess)
 
 
 # # 拷贝assert目录到输出目录
