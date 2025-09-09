@@ -54,6 +54,7 @@ add_subdirectory(sizeof_windows)
 add_subdirectory(FindWindow)
 add_subdirectory(GetWindowThreadProcess)
 add_subdirectory(ReadProcessMemory)
+add_subdirectory(ReadProcessMemory_basepointer)
 
 
 # # 拷贝assert目录到输出目录
