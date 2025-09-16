@@ -218,7 +218,7 @@ static float RF4(_In_opt_ UINT_PTR address)
 /// \param[in] address
 /// \param[in] val
 /// \return
-static BOOL W4(_In_opt_ UINT_PTR address, _In_opt_ int val)
+static BOOL W4(_In_opt_ UINT_PTR address, _In_opt_ DWORD val)
 {
     HWND handle = FindWindowA(lpClassName, lpWindowName);
     if (!handle) ///  Check if the window handle is valid
@@ -258,7 +258,7 @@ static BOOL W4(_In_opt_ UINT_PTR address, _In_opt_ int val)
     return true;
 }
 
-static BOOL WF4(_In_opt_ UINT_PTR address, _In_opt_ float val)
+static BOOL WF4(_In_opt_ UINT_PTR address, _In_opt_ FLOAT val)
 {
     HWND handle = FindWindowA(lpClassName, lpWindowName);
     if (!handle) ///  Check if the window handle is valid
@@ -336,8 +336,7 @@ int main(int argc, char* argv[])
 
     printf("DWORDËùÕ¼¿Õ¼ä=%d \r\n", sizeof(DWORD));
     std::cout << "Hello World!\n";
-}
 
-getchar();
-return 0;
+    getchar();
+    return 0;
 }
