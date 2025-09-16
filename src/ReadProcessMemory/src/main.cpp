@@ -105,7 +105,6 @@ int R4(UINT_PTR ÄÚ´æµØÖ·)
 int main(int argc, char *argv[])
 {
     /// [[PlantsVsZombies.exe+2A9EC0]+768]+5560
-    /// GetModuleHandle("PlantsVsZombie.exe")+2A9EC0
     /// [[[6A9EC0]+768]+5560]
     // PlantsVsZombie.exe + 2A9EC0
 
