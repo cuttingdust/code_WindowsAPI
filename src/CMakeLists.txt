@@ -56,6 +56,7 @@ add_subdirectory(GetWindowThreadProcess)
 add_subdirectory(ReadProcessMemory)
 add_subdirectory(ReadProcessMemory_basepointer)
 add_subdirectory(WriteProcessMemory)
+add_subdirectory(assembly)
 
 
 # # 拷贝assert目录到输出目录
