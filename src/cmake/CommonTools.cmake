@@ -83,6 +83,7 @@ macro(get_src_include)
     FILE(GLOB UI_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.ui)
     FILE(GLOB QRC_SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.qrc)
 	FILE(GLOB PROTO_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.proto)
+	FILE(GLOB ASM_FILES ${CMAKE_CURRENT_LIST_DIR}/asm/*.asm)
 
     if(RC_FILE)
         source_group("Resource Files" FILES ${RC_FILE})
@@ -129,6 +130,10 @@ macro(get_src_include)
         source_group("Generate Files" FILES ${PROTO_CC_FILE})
         source_group("Generate Files" FILES ${PROTO_HREADER_FILE})		
         endif()
+	endif()
+	
+	if(ASM_FILES)
+		source_group("Assembly Files" FILES ${ASM_FILES})		
 	endif()
 endmacro()
 
@@ -215,17 +220,24 @@ macro(set_cpp name)
 			-D_CRT_SECURE_NO_WARNINGS
 		)
 		
-        set_target_properties(${name} PROPERTIES
-            COMPILE_FLAGS "/Zc:wchar_t"	# 是
-			#COMPILE_FLAGS "/Zc:wchar_t-" #否
-        )
-
+		if(!ASM_FILES)
+			 set_target_properties(${name} PROPERTIES
+				COMPILE_FLAGS "/Zc:wchar_t"	# 是
+				#COMPILE_FLAGS "/Zc:wchar_t-" #否
+			)
+		endif()
+       
         # set_target_properties(${name} PROPERTIES
         # COMPILE_FLAGS "-bigobj"
         # )
         set_target_properties(${PROJECT_NAME} PROPERTIES
             MSVC_RUNTIME_LIBRARY MultiThreadedDLL
         )
+		
+		if(ASM_FILES)
+			# 设置 MASM 汇编选项（如果需要的话）
+			set_source_files_properties(${ASM_FILES} PROPERTIES LANGUAGE ASM_MASM)
+		endif()
     endif()
 
     if(CMAKE_BUILD_TYPE STREQUAL "")
@@ -292,6 +304,7 @@ function(cpp_library name)
 		
 		${SRC}
         ${H_FILE_I}
+		${ASM_FILES}
     )
 
 
@@ -368,6 +381,7 @@ function(cpp_execute name)
 		
 		${SRC}
         ${H_FILE_I}
+		${ASM_FILES}
     )
 
     # 设置配置信息

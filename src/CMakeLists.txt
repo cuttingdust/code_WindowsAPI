@@ -6,6 +6,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(XWindowsAPI)
 
+# 查找 MASM 编译器
+if(MSVC)
+    enable_language(ASM_MASM)
+endif()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(MSVC)
 set(CMAKE_GENERATOR_PLATFORM x64)
@@ -13,7 +18,9 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CXX_STANDARD 23)
+# C++23
+# C++26. CMake 3.25 and later recognize 26 as a valid value, no version has support for any compiler.
+set(CMAKE_CXX_STANDARD 23) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -27,6 +34,8 @@ if(OpenMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
+
+message(STATUS "CMAKE_CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
 
 # 外部依赖项
 set(DPS_INCLUDES)
@@ -57,6 +66,7 @@ add_subdirectory(ReadProcessMemory)
 add_subdirectory(ReadProcessMemory_basepointer)
 add_subdirectory(WriteProcessMemory)
 add_subdirectory(assembly)
+add_subdirectory(assembly_x64)
 
 
 # # 拷贝assert目录到输出目录

@@ -15,10 +15,4 @@ if(MSVC)
 
     # set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
     # set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
-
-    # 将目标设置为 Win32 可执行文件
-    # set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
-
-    # 设置编译警告级别
-    # set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W4")
 endif()
