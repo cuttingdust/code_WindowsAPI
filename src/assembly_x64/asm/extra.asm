@@ -31,7 +31,7 @@ else
     mycall endp
 
     myadd1 proc
-        xor edx, edx             ; Çå³ý edx ¼Ä´æÆ÷
+        ;xor edx, edx             ; Çå³ý edx ¼Ä´æÆ÷
 	    mov eax, 12345678h
 		ret
 	myadd1 endp 
