@@ -41,6 +41,28 @@
 /// 因为CreateProcess的执行会将新创建的两个内核对象的使用计数 + 1
 
 
+void CreateColoredConsole(const wchar_t *title, WORD color)
+{
+    /// TODO 测试失效
+    STARTUPINFO         si = { 0 };
+    PROCESS_INFORMATION pi = { 0 };
+
+    si.cb              = sizeof(STARTUPINFO);
+    si.dwFlags         = STARTF_USESHOWWINDOW | STARTF_USEFILLATTRIBUTE;
+    si.dwFillAttribute = color;
+    si.wShowWindow     = TRUE;
+
+    wchar_t cmdLine[256];
+    swprintf(cmdLine, 256, L"cmd.exe /k title %s && echo This is a colored console!", title);
+
+    if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi))
+    {
+        printf("创建彩色控制台: %ls\n", title);
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     {
@@ -50,21 +72,22 @@ int main(int argc, char *argv[])
         PROCESS_INFORMATION pi;
 
         si.cb      = sizeof(STARTUPINFO);
-        si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USEFILLATTRIBUTE; /// 启用颜色设置
-                                                                     /// 设置颜色：白色文本，蓝色背景
-        si.dwFillAttribute = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | BACKGROUND_BLUE;
-        si.wShowWindow     = TRUE;
-        BOOL bRet          = ::CreateProcess(NULL,               /// 应用程序名（使用命令行）
-                                             szCommandLine,      /// 命令行字符串
-                                             NULL,               /// 进程安全属性
-                                             NULL,               /// 线程安全属性
-                                             FALSE,              /// 句柄继承选项
-                                             CREATE_NEW_CONSOLE, /// 创建标志
-                                             NULL,               /// 环境块
-                                             NULL,               /// 当前目录
-                                             &si,                /// STARTUPINFO  /// （引用计数=2）
-                                             &pi                 /// PROCESS_INFORMATION
-                 );
+        si.dwFlags = STARTF_USESHOWWINDOW /*| STARTF_USEFILLATTRIBUTE*/; /// 启用颜色设置
+                                                                         /// 设置颜色：白色文本，蓝色背景
+        // si.dwFillAttribute = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | BACKGROUND_BLUE;
+        /// 这个没用 因为是创建进程是GUI， 所以没有颜色控制台
+        si.wShowWindow = TRUE;
+        BOOL bRet      = ::CreateProcess(NULL,               /// 应用程序名（使用命令行）
+                                         szCommandLine,      /// 命令行字符串
+                                         NULL,               /// 进程安全属性
+                                         NULL,               /// 线程安全属性
+                                         FALSE,              /// 句柄继承选项
+                                         CREATE_NEW_CONSOLE, /// 创建标志
+                                         NULL,               /// 环境块
+                                         NULL,               /// 当前目录
+                                         &si,                /// STARTUPINFO  /// （引用计数=2）
+                                         &pi                 /// PROCESS_INFORMATION
+             );
         if (!bRet)
         {
             DWORD error = GetLastError();
@@ -96,6 +119,15 @@ int main(int argc, char *argv[])
 
         printf("新进程的进程ID%d\n", pi.dwProcessId);
         printf("新进程的主线程ID%d\n", pi.dwThreadId);
+    }
+
+    {
+        /// 在主函数中测试
+        // CreateColoredConsole(L"Red Console", FOREGROUND_RED | FOREGROUND_INTENSITY);
+        // Sleep(2000);
+        // CreateColoredConsole(L"Green Console", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+        // Sleep(2000);
+        // CreateColoredConsole(L"Blue Console", FOREGROUND_BLUE | FOREGROUND_INTENSITY);
     }
 
     getchar();
