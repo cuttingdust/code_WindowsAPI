@@ -72,6 +72,7 @@ add_subdirectory(assembly_x64)
 add_subdirectory(CreateProcess)
 add_subdirectory(CreateToolhelp32Snapshot)
 add_subdirectory(ExitProcess)
+add_subdirectory(TerminateProcess)
 
 # # 拷贝assert目录到输出目录
 # set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
