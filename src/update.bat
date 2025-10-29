@@ -1,4 +1,4 @@
 @echo off
 cmake -S . -B build
-::timeout 2
-pause
+timeout 3
+::pause
