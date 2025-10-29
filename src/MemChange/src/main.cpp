@@ -125,7 +125,7 @@ BOOL CompareAPage(MEM_ADDR dwBaseAddr, DWORD dwValue)
 
     /// 当前页面可以读
     DWORD* pdw;
-    for (int i = 0; i < (int)4 * 1024 - 3; i++)
+    for (int i = 0; i < (int)4 * 1024 - 3; i++) /// 每次查找4字节 int类型的
     {
         pdw = (DWORD*)&arBytes[i];
         if (pdw[0] == dwValue)
