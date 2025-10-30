@@ -142,7 +142,9 @@ BOOL FindFirst(DWORD dwValue)
 {
     const DWORD dwOnePage = 4 * 1024;
     if (g_hProcess == NULL)
+    {
         return FALSE;
+    }
 
     printf("开始搜索内存...\n");
 
