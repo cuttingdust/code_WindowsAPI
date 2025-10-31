@@ -77,7 +77,10 @@ add_subdirectory(MemChange)
 add_subdirectory(MemChange_Testor)
 add_subdirectory(CreateMutex)
 add_subdirectory(ConsoleHide)
+###############################################
 add_subdirectory(CreateThread)
+add_subdirectory(ExitThread)
+add_subdirectory(TerminateThread)
 add_subdirectory(SetThreadPriority)
 
 # # 拷贝assert目录到输出目录
