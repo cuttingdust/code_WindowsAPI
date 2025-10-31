@@ -40,13 +40,13 @@ UINT __stdcall TicketSeller(LPVOID lpParam)
 
 int main()
 {
-    const int SELLER_COUNT = 3; // 3个售票员
+    const int SELLER_COUNT = 3; /// 3个售票员
     HANDLE    hSellers[SELLER_COUNT];
 
     printf("=== 多线程售票竞争演示 ===\n");
     printf("总票数: %d, 售票员: %d个\n\n", g_totalTickets, SELLER_COUNT);
 
-    // 创建售票员线程
+    /// 创建售票员线程
     for (int i = 0; i < SELLER_COUNT; i++)
     {
         hSellers[i] = (HANDLE)::_beginthreadex(NULL, 0, TicketSeller, (LPVOID)(i + 1), 0, NULL);
