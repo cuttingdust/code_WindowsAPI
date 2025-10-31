@@ -82,6 +82,7 @@ add_subdirectory(CreateThread)
 add_subdirectory(ExitThread)
 add_subdirectory(TerminateThread)
 add_subdirectory(SetThreadPriority)
+add_subdirectory(CountErr)
 
 # # 拷贝assert目录到输出目录
 # set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
