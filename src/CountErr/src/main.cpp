@@ -6,6 +6,8 @@
 
 /// 总运行时间: 07.829秒
 
+/// 总运行时间: 07.813秒
+
 /// 票务信息
 int g_totalTickets  = 100; /// 总票数
 int g_currentTicket = 1;   /// 当前票号
@@ -13,6 +15,8 @@ int g_soldCount     = 0;   /// 已售出票数
 
 /// 时间统计
 DWORD g_startTime; /// 开始时间（毫秒）
+
+CRITICAL_SECTION g_cs;
 
 /// 获取当前时间字符串
 void GetCurrentTimeString(char* buffer, int bufferSize)
@@ -62,29 +66,33 @@ UINT APIENTRY TicketSeller(LPVOID lpParam)
     int  sellerId = (int)(INT_PTR)lpParam; ///  修正类型转换
     char timeBuffer[64];
     char elapsedBuffer[32];
+    int  ticketNumber = 0;
 
     while (true)
     {
+        ::EnterCriticalSection(&g_cs);
+
         /// 检查是否还有票
         if (g_currentTicket > g_totalTickets)
         {
+            ::LeaveCriticalSection(&g_cs);
             break;
         }
 
-        /// 模拟售票过程（存在竞争！）
-        int ticketNumber = g_currentTicket; /// 读取当前票号
-        ::Sleep(10);                        /// 模拟处理时间（制造竞争窗口）
-        g_currentTicket = ticketNumber + 1; /// 更新票号
-
-        /// 售出这张票
+        ticketNumber = g_currentTicket;
+        g_currentTicket++;
         g_soldCount++;
+
+        ::LeaveCriticalSection(&g_cs);
+
+        ::Sleep(10); /// 模拟处理时间（制造竞争窗口）
 
         GetCurrentTimeString(timeBuffer, sizeof(timeBuffer));
         FormatElapsedTime(GetElapsedTime(), elapsedBuffer, sizeof(elapsedBuffer));
 
         printf("[%s] 售票员%d: 售出票号 %d (运行时间: %s)\n", timeBuffer, sellerId, ticketNumber, elapsedBuffer);
 
-        Sleep(50); /// 模拟售票时间
+        ::Sleep(50); /// 模拟售票时间
     }
 
     GetCurrentTimeString(timeBuffer, sizeof(timeBuffer));
@@ -103,6 +111,8 @@ int main()
     char      endTimeStr[64];
     char      totalTimeBuffer[32];
 
+    ::InitializeCriticalSection(&g_cs);
+
     /// 记录开始时间
     g_startTime = ::GetTickCount();
     GetCurrentTimeString(startTimeStr, sizeof(startTimeStr));
@@ -118,6 +128,7 @@ int main()
         if (hSellers[i] == NULL)
         {
             printf("创建线程 %d 失败\n", i + 1);
+            ::DeleteCriticalSection(&g_cs);
             return -1;
         }
     }
@@ -130,6 +141,8 @@ int main()
     {
         ::CloseHandle(hSellers[i]);
     }
+
+    ::DeleteCriticalSection(&g_cs);
 
     /// 计算总运行时间
     DWORD totalElapsed = GetElapsedTime();
