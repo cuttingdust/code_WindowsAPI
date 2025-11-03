@@ -69,6 +69,7 @@ add_subdirectory(WriteProcessMemory)
 add_subdirectory(assembly)
 add_subdirectory(assembly_x64)
 add_subdirectory(DBG_TOOL_TEST)
+add_subdirectory(DBG_TOOL_CALL_RET)
 #############################################
 add_subdirectory(CreateProcess)
 add_subdirectory(CreateToolhelp32Snapshot)
