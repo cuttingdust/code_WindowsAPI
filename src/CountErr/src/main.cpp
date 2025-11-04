@@ -4,11 +4,11 @@
 #include <process.h>
 #include <Windows.h>
 
-/// 总运行时间: 07.829秒
+/// 总运行时间: 07.829秒 /// 临界区
 
-/// 总运行时间: 07.813秒
+/// 总运行时间: 02.672秒 /// 原子 直接增加
 
-/// 总运行时间: 02.672秒
+/// 总运行时间: 02.672秒 /// 原子 CAS 方案
 
 /// 票务信息
 int g_totalTickets  = 100; /// 总票数
@@ -18,7 +18,7 @@ int g_soldCount     = 0;   /// 已售出票数
 /// 时间统计
 DWORD g_startTime; /// 开始时间（毫秒）
 
-// CRITICAL_SECTION g_cs;
+CRITICAL_SECTION g_cs;
 
 /// 获取当前时间字符串
 void GetCurrentTimeString(char* buffer, int bufferSize)
@@ -63,32 +63,71 @@ void FormatElapsedTime(DWORD milliseconds, char* buffer, int bufferSize)
 }
 
 /// 售票员线程函数
-UINT APIENTRY TicketSeller(LPVOID lpParam)
+UINT WINAPI TicketSeller(LPVOID lpParam)
 {
     int  sellerId = (int)(INT_PTR)lpParam; ///  修正类型转换
     char timeBuffer[64];
     char elapsedBuffer[32];
     int  ticketNumber = 0;
+    int  oldValue, newValue;
 
     while (true)
     {
-        // ::EnterCriticalSection(&g_cs);
-
-        /// 检查是否还有票
-        if (g_currentTicket > g_totalTickets)
         {
-            // ::LeaveCriticalSection(&g_cs);
-            break;
+            do
+            {
+                oldValue = g_currentTicket; /// 读取当前值
+
+                if (oldValue > g_totalTickets)
+                {
+                    /// 票已售完，退出线程
+                    GetCurrentTimeString(timeBuffer, sizeof(timeBuffer));
+                    FormatElapsedTime(GetElapsedTime(), elapsedBuffer, sizeof(elapsedBuffer));
+                    printf("[%s] 售票员%d: 工作完成 (总运行时间: %s)\n", timeBuffer, sellerId, elapsedBuffer);
+                    return 0;
+                }
+
+                newValue = oldValue + 1; /// 计算新票号
+
+                /// CAS 操作：如果 g_currentTicket == oldValue，则设置为 newValue
+                /// 如果成功，返回 oldValue；如果失败，返回当前 g_currentTicket 的值
+            }
+            while (::InterlockedCompareExchange((long*)&g_currentTicket, newValue, oldValue) != oldValue);
+
+            /// CAS 成功，获取到票号
+            ticketNumber = oldValue;
+
+            /// 增加售出票数
+            ::InterlockedIncrement((long*)&g_soldCount);
         }
 
-        /// 原子操作
-        ticketNumber = ::InterlockedExchangeAdd((long*)&g_currentTicket, 1);
-        ::InterlockedIncrement((long*)&g_soldCount);
-        // ticketNumber = g_currentTicket;
-        // g_currentTicket++;
-        // g_soldCount++;
+        {
+            // /// 检查是否还有票
+            // if (g_currentTicket > g_totalTickets)
+            // {
+            //     // ::LeaveCriticalSection(&g_cs);
+            //     break;
+            // }
+            //
+            // /// 原子操作
+            // ticketNumber = ::InterlockedExchangeAdd((long*)&g_currentTicket, 1);
+            // ::InterlockedIncrement((long*)&g_soldCount);
+        }
 
-        // ::LeaveCriticalSection(&g_cs);
+        {
+            // ::EnterCriticalSection(&g_cs);
+            // /// 检查是否还有票
+            // if (g_currentTicket > g_totalTickets)
+            // {
+            //     // ::LeaveCriticalSection(&g_cs);
+            //     break;
+            // }
+            // ticketNumber = g_currentTicket;
+            // g_currentTicket++;
+            // g_soldCount++;
+
+            // ::LeaveCriticalSection(&g_cs);
+        }
 
         ::Sleep(10); /// 模拟处理时间（制造竞争窗口）
 
