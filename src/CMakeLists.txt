@@ -58,18 +58,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CommonTools)
 
-###########################################
-add_subdirectory(MessageBox)
-add_subdirectory(sizeof_windows)
-add_subdirectory(FindWindow)
-add_subdirectory(GetWindowThreadProcess)
-add_subdirectory(ReadProcessMemory)
-add_subdirectory(ReadProcessMemory_basepointer)
-add_subdirectory(WriteProcessMemory)
-add_subdirectory(assembly)
-add_subdirectory(assembly_x64)
-add_subdirectory(DBG_TOOL_TEST)
-add_subdirectory(DBG_TOOL_CALL_RET)
+
 #############################################
 add_subdirectory(CreateProcess)
 add_subdirectory(CreateToolhelp32Snapshot)
