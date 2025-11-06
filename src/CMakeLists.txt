@@ -75,6 +75,10 @@ add_subdirectory(TerminateThread)
 add_subdirectory(SetThreadPriority)
 add_subdirectory(CountErr) # 临界区 原子操作
 add_subdirectory(EventErr) # 事件 信号量 同步
+################################################
+add_subdirectory(FindWindow)
+add_subdirectory(HelloWindows)
+
 
 # # 拷贝assert目录到输出目录
 # set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
