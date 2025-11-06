@@ -78,6 +78,8 @@ add_subdirectory(EventErr) # 事件 信号量 同步
 ################################################
 add_subdirectory(FindWindow)
 add_subdirectory(HelloWindows)
+add_subdirectory(WindowsDemo)
+add_subdirectory(WindowsTyper)
 
 
 # # 拷贝assert目录到输出目录
