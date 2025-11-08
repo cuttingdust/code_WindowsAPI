@@ -80,6 +80,7 @@ add_subdirectory(FindWindow)
 add_subdirectory(HelloWindows)
 add_subdirectory(WindowsDemo)
 add_subdirectory(WindowsTyper)
+add_subdirectory(WindowsTimer)
 
 
 # # 拷贝assert目录到输出目录

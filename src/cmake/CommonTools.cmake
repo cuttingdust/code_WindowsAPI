@@ -24,10 +24,20 @@ set(SDK_LIB_DIRECTORY
 # 输出路径
 set(OUT ${CMAKE_CURRENT_SOURCE_DIR}/../out)
 message("out = ${OUT}")
-set(OUT_LIB_PATH ${OUT}/lib)
-set(OUT_DLL_PATH ${OUT}/bin.x64)
+# 根据 -A 参数设置输出路径
+if(CMAKE_GENERATOR_PLATFORM)
+    set(ARCH_SUFFIX ".${CMAKE_GENERATOR_PLATFORM}")
+else()
+    # 默认架构
+    set(ARCH_SUFFIX ".x64")
+endif()
+
+set(OUT_DLL_PATH ${OUT}/bin${ARCH_SUFFIX})
 set(OUT_INCLUDE_PATH ${OUT}/include)
-set(OUT_RUN_PATH ${OUT}/bin.x64)
+set(OUT_RUN_PATH ${OUT}/bin${ARCH_SUFFIX})
+
+message(STATUS "输出路径架构后缀: ${ARCH_SUFFIX}")
+message(STATUS "DLL 路径: ${OUT_DLL_PATH}")
 
 # 安装与查找
 string(REPLACE "\\" "/" INSTALL_PREFIX ${OUT})
