@@ -81,6 +81,7 @@ add_subdirectory(HelloWindows)
 add_subdirectory(WindowsDemo)
 add_subdirectory(WindowsTyper)
 add_subdirectory(WindowsTimer)
+add_subdirectory(WindowsSSP_Test)
 
 
 # # 拷贝assert目录到输出目录
