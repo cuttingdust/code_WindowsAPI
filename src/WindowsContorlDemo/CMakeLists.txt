@@ -27,8 +27,5 @@ if(MSVC)
     #    WIN32_EXECUTABLE TRUE
     # )
 
-    
-)
-
 
 endif()
