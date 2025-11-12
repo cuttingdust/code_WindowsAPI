@@ -86,6 +86,7 @@ add_subdirectory(WindowsSSP_GUI)
 ################################################
 add_subdirectory(WindowsDlg)
 add_subdirectory(WindowsCommon)
+add_subdirectory(WindowsContorlDemo)
 
 
 # # 拷贝assert目录到输出目录
