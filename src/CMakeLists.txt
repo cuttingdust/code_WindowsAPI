@@ -35,6 +35,15 @@ if(OpenMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+# MFC
+find_package(MFC)
+message("MFC_FOUND = ${MFC_FOUND}")
+
+if(MFC_FOUND)
+# 1: static MFC library, 2: shared MFC library
+set(CMAKE_MFC_FLAG 2)
+endif()
+
 message(STATUS "CMAKE_CXX_COMPILER = ${CMAKE_CXX_COMPILER}")
 
 # 外部依赖项
@@ -87,7 +96,8 @@ add_subdirectory(WindowsSSP_GUI)
 add_subdirectory(WindowsDlg)
 add_subdirectory(WindowsCommon)
 add_subdirectory(WindowsContorlDemo)
-
+################################################
+add_subdirectory(WindowsMFCDemo)
 
 # # 拷贝assert目录到输出目录
 # set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
