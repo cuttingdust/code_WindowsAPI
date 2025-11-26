@@ -102,8 +102,9 @@ add_subdirectory(WindowsButtonMFC)
 add_subdirectory(WindowsMemoryInfo)
 ################################################
 add_subdirectory(WindowsEncrypt)
+add_subdirectory(WindowsMemPicture)
 
 
-# # 拷贝assert目录到输出目录
-# set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
-# file(COPY ${ASSERT_PATH} DESTINATION ${OUT_RUN_PATH})
+# 拷贝assert目录到输出目录
+set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
+file(COPY ${ASSERT_PATH} DESTINATION ${OUT_RUN_PATH})

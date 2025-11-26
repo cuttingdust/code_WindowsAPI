@@ -87,25 +87,42 @@ macro(get_src_include)
     list(APPEND SRC ${SOURCE})
 	# message("SRC = ${SRC}")
 	
+	###################################################################
+	
 	FILE(GLOB H_FILE_I ${CMAKE_CURRENT_LIST_DIR}/include/*.h)
     
+	##################################################################
 	# 安装的时候 不暴露出去
+	
 	FILE(GLOB RC_FILE ${CMAKE_CURRENT_LIST_DIR}/src/*.rc)
-    FILE(GLOB UI_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.ui)
-    FILE(GLOB QRC_SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.qrc)
-	FILE(GLOB PROTO_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.proto)
-	FILE(GLOB ASM_FILES ${CMAKE_CURRENT_LIST_DIR}/asm/*.asm)
+	
+	# 新增：将 resource.h
+    FILE(GLOB RESOURCE_H_FILES
+        ${CMAKE_CURRENT_LIST_DIR}/src/resource.h
+        ${CMAKE_CURRENT_LIST_DIR}/src/RESOURCE.h
+        ${CMAKE_CURRENT_LIST_DIR}/src/Resource.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/resource.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/RESOURCE.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/Resource.h
+    )
+    
+    if(RESOURCE_H_FILES)
+        list(APPEND RC_FILE ${RESOURCE_H_FILES})
+        message(STATUS "找到 resource.h 文件: ${RESOURCE_H_FILES}")
+    endif()
 
     if(RC_FILE)
         source_group("Resource Files" FILES ${RC_FILE})
     endif()
 
+	FILE(GLOB UI_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.ui)
     if(UI_FILES)
         qt_wrap_ui(UIC_HEADER ${UI_FILES})
         source_group("Resource Files" FILES ${UI_FILES})
         source_group("Generate Files" FILES ${UIC_HEADER})
     endif()
 
+	FILE(GLOB QRC_SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.qrc)
     if(QRC_SOURCE_FILES)
         qt6_add_resources(QRC_FILES ${QRC_SOURCE_FILES})
         # qt_wrap_cpp() moc 相关
@@ -113,6 +130,7 @@ macro(get_src_include)
 		source_group("Generate Files" FILES ${QRC_FILES})
     endif()
 	
+	FILE(GLOB PROTO_FILES ${CMAKE_CURRENT_LIST_DIR}/src/*.proto)
 	if(PROTO_FILES)
 		source_group("Resource Files" FILES ${PROTO_FILES})
 		if(PROTOC_EXECUTABLE)
