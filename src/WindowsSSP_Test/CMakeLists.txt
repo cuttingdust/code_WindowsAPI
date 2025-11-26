@@ -15,7 +15,7 @@ if(MSVC)
     # set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
     # set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG
     set_target_properties(${PROJECT_NAME} PROPERTIES
-    LINK_FLAGS "/ENTRY:wWinMainCRTStartup"
+    LINK_FLAGS "/ENTRY:mainCRTStartup"
    
     # 修改入口点
     # target_link_options(${PROJECT_NAME} PRIVATE

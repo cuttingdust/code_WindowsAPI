@@ -103,6 +103,7 @@ add_subdirectory(WindowsMemoryInfo)
 ################################################
 add_subdirectory(WindowsEncrypt)
 add_subdirectory(WindowsMemPicture)
+add_subdirectory(WindowsA2W)
 
 
 # 拷贝assert目录到输出目录
