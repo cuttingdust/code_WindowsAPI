@@ -5,6 +5,7 @@
 #include <vector>
 #include <stack>
 
+//////////////////////////////////////////////////////////////////
 
 /// 多字节 → 宽字符串
 std::wstring A2Wstring(const char* string)
@@ -62,62 +63,163 @@ std::string W2Astring(const wchar_t* wstring)
 
 //////////////////////////////////////////////////////////////////
 
-
-static std::string GetCurrentDir()
+/**
+ * @brief 获取当前工作目录
+ * @return 当前目录的字符串，如果获取失败返回空字符串
+ */
+std::string GetCurrentDir()
 {
-    std::string currentPath;
-    char        buffer[MAX_PATH] = { 0 };
-    DWORD       result           = ::GetCurrentDirectoryA(MAX_PATH, buffer);
-    if (result == 0)
+    char  buffer[MAX_PATH] = { 0 };
+    DWORD result           = ::GetCurrentDirectoryA(MAX_PATH, buffer);
+    return (result == 0 || result > MAX_PATH) ? "" : std::string(buffer);
+}
+
+/**
+ * @brief 格式化文件大小，转换为易读的格式 (B, KB, MB)
+ * @param fileSize 文件大小（字节）
+ * @return 格式化后的文件大小字符串
+ */
+std::string FormatFileSize(LARGE_INTEGER fileSize)
+{
+    if (fileSize.QuadPart == 0)
     {
-        std::cout << "获取当前目录失败！错误码: " << GetLastError() << std::endl;
+        return "(空文件)";
     }
-    else if (result > MAX_PATH)
+    else if (fileSize.QuadPart < 1024)
     {
-        std::cout << "缓冲区太小，需要: " << result << " 字符" << std::endl;
+        return "(" + std::to_string(fileSize.QuadPart) + " B)";
+    }
+    else if (fileSize.QuadPart < 1024 * 1024)
+    {
+        return "(" + std::to_string(fileSize.QuadPart / 1024) + " KB)";
     }
     else
     {
-        currentPath = buffer;
+        return "(" + std::to_string(fileSize.QuadPart / (1024 * 1024)) + " MB)";
     }
-
-    return currentPath;
 }
 
+
+/**
+ * @brief 检查文件扩展名是否匹配
+ * @param fileName 文件名
+ * @param extFilter 扩展名过滤器，如 "txt", "cpp", "*" 等
+ * @return 如果匹配返回true，否则返回false
+ */
+bool MatchFileExtension(const std::string& fileName, const std::string& extFilter)
+{
+    /// 如果过滤器是 "*" 或空，匹配所有文件
+    if (extFilter == "*" || extFilter.empty())
+    {
+        return true;
+    }
+
+    /// 如果是目录，总是匹配（目录不受扩展名过滤影响）
+    /// 这里我们无法直接判断是否是目录，所以需要在调用处结合目录属性判断
+
+    /// 查找文件扩展名
+    size_t dotPos = fileName.find_last_of('.');
+    if (dotPos == std::string::npos)
+    {
+        /// 没有扩展名的文件，只有当过滤器为 "*" 时匹配
+        return extFilter == "*";
+    }
+
+    /// 提取扩展名（不包含点）
+    std::string fileExt = fileName.substr(dotPos + 1);
+
+    /// 转换为小写进行比较（不区分大小写）
+    std::string filterLower  = extFilter;
+    std::string fileExtLower = fileExt;
+
+    std::ranges::transform(filterLower, filterLower.begin(), ::tolower);
+    std::ranges::transform(fileExtLower, fileExtLower.begin(), ::tolower);
+
+    return fileExtLower == filterLower;
+}
+
+
+/**
+ * @brief 检查是否需要跳过当前文件
+ * @param fileName 文件名
+ * @param fileAttributes 文件属性
+ * @param showHidden 是否显示隐藏文件
+ * @param extFilter 扩展名过滤器
+ * @param isDirectory 是否是目录
+ * @return 如果需要跳过返回true，否则返回false
+ */
+bool ShouldSkipFile(const std::string& fileName, DWORD fileAttributes, bool showHidden, const std::string& extFilter,
+                    bool isDirectory)
+{
+    /// 跳过特殊目录
+    if (fileName == "." || fileName == "..")
+    {
+        return true;
+    }
+
+    /// 跳过隐藏文件（如果不需要显示）
+    if (!showHidden && (fileAttributes & FILE_ATTRIBUTE_HIDDEN))
+    {
+        return true;
+    }
+
+    /// 如果是文件，检查扩展名过滤
+    if (!isDirectory && !MatchFileExtension(fileName, extFilter))
+    {
+        return true;
+    }
+
+    return false;
+}
 
 //////////////////////////////////////////////////////////////////
 
 
+/**
+ * @brief 树形打印目录结构（支持扩展名过滤）
+ * @param path 要打印的目录路径，如果为NULL则使用当前目录
+ * @param ext 文件扩展名过滤，默认"*"表示所有文件，如 "txt", "cpp", "exe" 等
+ * @param showHidden 是否显示隐藏文件，默认false
+ * 
+ * 使用深度优先遍历算法，以树形结构显示目录和文件
+ * 支持文件大小显示、隐藏文件过滤和扩展名过滤
+ */
 void PrintDirTree(const char* path = NULL, const char* ext = "*", bool showHidden = false)
 {
-    std::string currentPath = path == NULL ? GetCurrentDir() : path;
+    /// 1. 初始化路径和过滤器
+    std::string currentPath = (path == NULL) ? GetCurrentDir() : std::string(path);
+    std::string extFilter   = (ext == NULL) ? "*" : std::string(ext);
 
     if (currentPath.empty())
     {
-        std::cout << "无效的目录路径！" << std::endl;
+        std::cout << "错误: 无法获取或访问目录路径" << std::endl;
         return;
     }
 
-    std::cout << "目录: " << currentPath << std::endl;
-    std::cout << "." << std::endl;
-
-    /// 使用栈来保存遍历状态
-    struct TraversalState
+    std::cout << "目录: " << currentPath;
+    if (extFilter != "*")
     {
-        std::string      path;         /// 当前目录路径
-        int              depth;        /// 当前深度
-        std::string      prefix;       /// 显示前缀
-        HANDLE           findHandle;   /// 查找句柄
-        WIN32_FIND_DATAA findData;     /// 当前文件数据
-        bool             hasMoreFiles; /// 是否还有更多文件要处理
+        std::cout << " [过滤: *." << extFilter << "]";
+    }
+    std::cout << std::endl;
+
+    /// 2. 定义遍历状态结构
+    struct DirState
+    {
+        std::string      path;         /// 当前目录完整路径
+        std::string      prefix;       /// 树形显示前缀（用于构建缩进）
+        HANDLE           findHandle;   /// 文件查找句柄
+        WIN32_FIND_DATAA findData;     /// 当前找到的文件数据
+        bool             hasMoreFiles; /// 是否还有更多文件待处理
     };
 
-    std::stack<TraversalState> stack;
+    /// 3. 初始化栈和计数器
+    std::stack<DirState> dirStack;
+    int                  fileCount = 0, dirCount = 0;
 
-    /// 初始化根目录状态
-    TraversalState rootState;
+    /// 4. 创建根目录状态并压栈
+    DirState rootState;
     rootState.path   = currentPath;
-    rootState.depth  = 0;
     rootState.prefix = "";
 
     std::string searchPattern = currentPath + "\\*";
@@ -126,230 +228,213 @@ void PrintDirTree(const char* path = NULL, const char* ext = "*", bool showHidde
 
     if (rootState.hasMoreFiles)
     {
-        stack.push(rootState);
+        dirStack.push(rootState);
     }
 
-    int fileCount = 0;
-    int dirCount  = 0;
-
-    while (!stack.empty())
+    /// 5. 主循环：处理目录栈
+    while (!dirStack.empty())
     {
-        TraversalState& current = stack.top();
+        DirState& current = dirStack.top();
 
-        /// 如果当前目录还有文件需要处理
+        /// 5.1 处理当前目录的文件
         if (current.hasMoreFiles)
         {
-            std::string filename = current.findData.cFileName;
+            std::string fileName       = current.findData.cFileName;
+            DWORD       fileAttributes = current.findData.dwFileAttributes;
+            bool        isDirectory    = (fileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-            /// 跳过 "." 和 ".."
-            if (filename == "." || filename == "..")
+            /// 检查是否需要跳过当前文件
+            if (ShouldSkipFile(fileName, fileAttributes, showHidden, extFilter, isDirectory))
             {
                 /// 直接移动到下一个文件
                 current.hasMoreFiles = (FindNextFileA(current.findHandle, &current.findData) != 0);
-                if (!current.hasMoreFiles)
+                if (!current.hasMoreFiles && current.findHandle != INVALID_HANDLE_VALUE)
                 {
                     FindClose(current.findHandle);
                 }
                 continue;
             }
 
-            /// 跳过隐藏文件（如果需要）
-            if (!showHidden && (current.findData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN))
-            {
-                /// 移动到下一个文件
-                current.hasMoreFiles = (FindNextFileA(current.findHandle, &current.findData) != 0);
-                if (!current.hasMoreFiles)
-                {
-                    FindClose(current.findHandle);
-                }
-                continue;
-            }
+            /// 检查下一个文件是否存在（用于确定前缀符号）
+            WIN32_FIND_DATAA nextFileData;
+            bool             hasNextFile = (FindNextFileA(current.findHandle, &nextFileData) != 0);
 
-            bool isDirectory = (current.findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-
-            /// 先检查是否还有更多文件（在当前文件处理前检查下一个）
-            WIN32_FIND_DATAA nextData;
-            bool             hasNext = (FindNextFileA(current.findHandle, &nextData) != 0);
-
-            /// 构建显示前缀
-            std::string displayPrefix = current.prefix;
-            if (current.depth > 0)
-            {
-                displayPrefix += (hasNext ? "├── " : "└── ");
-            }
-
-            /// 显示当前项目
-            std::cout << displayPrefix << filename;
+            /// 5.2 构建并显示当前项
+            std::string displayLine = current.prefix + (hasNextFile ? "├── " : "└── ") + fileName;
 
             if (isDirectory)
             {
-                std::cout << " [DIR]";
+                std::cout << displayLine << " [DIR]" << std::endl;
                 dirCount++;
             }
             else
             {
-                fileCount++;
-
-                /// 显示文件大小
+                /// 显示文件大小信息
                 LARGE_INTEGER fileSize;
                 fileSize.LowPart  = current.findData.nFileSizeLow;
                 fileSize.HighPart = current.findData.nFileSizeHigh;
 
-                if (fileSize.QuadPart == 0)
-                {
-                    std::cout << " (空文件)";
-                }
-                else if (fileSize.QuadPart < 1024)
-                {
-                    std::cout << " (" << fileSize.QuadPart << " B)";
-                }
-                else if (fileSize.QuadPart < 1024 * 1024)
-                {
-                    std::cout << " (" << (fileSize.QuadPart / 1024) << " KB)";
-                }
-                else
-                {
-                    std::cout << " (" << (fileSize.QuadPart / (1024 * 1024)) << " MB)";
-                }
+                std::cout << displayLine << " " << FormatFileSize(fileSize) << std::endl;
+                fileCount++;
             }
-            std::cout << std::endl;
 
-            /// 如果是目录，立即开始遍历它
+            /// 5.3 如果是目录，创建新状态并深入遍历
             if (isDirectory)
             {
-                TraversalState newState;
-                newState.path  = current.path + "\\" + filename;
-                newState.depth = current.depth + 1;
+                DirState newDir;
+                newDir.path = current.path + "\\" + fileName;
 
-                /// 构建新的前缀
-                newState.prefix = current.prefix;
-                if (current.depth > 0)
+                /// 构建子目录前缀：根据是否有后续文件决定使用"│   "或"    "
+                newDir.prefix = current.prefix + (hasNextFile ? "│   " : "    ");
+
+                /// 初始化子目录的查找状态
+                std::string subDirPattern = newDir.path + "\\*";
+                newDir.findHandle         = FindFirstFileA(subDirPattern.c_str(), &newDir.findData);
+                newDir.hasMoreFiles       = (newDir.findHandle != INVALID_HANDLE_VALUE);
+
+                if (newDir.hasMoreFiles)
                 {
-                    newState.prefix += (hasNext ? "│   " : "    ");
-                }
-
-                std::string newSearchPattern = newState.path + "\\*";
-                newState.findHandle          = FindFirstFileA(newSearchPattern.c_str(), &newState.findData);
-                newState.hasMoreFiles        = (newState.findHandle != INVALID_HANDLE_VALUE);
-
-                if (newState.hasMoreFiles)
-                {
-                    /// 更新当前状态，保存下一个文件信息
-                    current.findData     = nextData;
-                    current.hasMoreFiles = hasNext;
-
-                    stack.push(newState);
+                    /// 更新当前状态并压入新目录
+                    current.findData     = nextFileData;
+                    current.hasMoreFiles = hasNextFile;
+                    dirStack.push(newDir);
                     continue; /// 立即开始处理新目录
                 }
             }
 
-            /// 更新当前状态为下一个文件
-            current.findData     = nextData;
-            current.hasMoreFiles = hasNext;
+            /// 5.4 移动到下一个文件
+            current.findData     = nextFileData;
+            current.hasMoreFiles = hasNextFile;
 
-            if (!current.hasMoreFiles)
+            if (!current.hasMoreFiles && current.findHandle != INVALID_HANDLE_VALUE)
             {
                 FindClose(current.findHandle);
             }
         }
         else
         {
-            /// 当前目录处理完成，弹出栈
-            stack.pop();
+            /// 5.5 当前目录处理完成，弹出栈
+            dirStack.pop();
         }
     }
 
+    /// 6. 输出统计信息
     std::cout << std::endl;
-    std::cout << dirCount << " 个目录, " << fileCount << " 个文件" << std::endl;
+    std::cout << "统计: " << dirCount << " 个目录, " << fileCount << " 个文件";
+    if (extFilter != "*")
+    {
+        std::cout << " [*." << extFilter << " 文件]";
+    }
+    std::cout << std::endl;
 }
 
-/// 简化版本：更清晰的树形显示
-void SimpleDirTree(const char* path = NULL)
+
+/**
+ * @brief 简化版树形目录打印（支持扩展名过滤）
+ * @param path 目录路径
+ * @param ext 扩展名过滤器
+ * 
+ * 更简洁的版本，专注于目录结构展示
+ */
+void SimpleDirTree(const char* path = NULL, const char* ext = "*")
 {
-    std::string currentPath = path == NULL ? GetCurrentDir() : path;
+    std::string currentPath = (path == NULL) ? GetCurrentDir() : std::string(path);
+    std::string extFilter   = (ext == NULL) ? "*" : std::string(ext);
+
     if (currentPath.empty())
+    {
+        std::cout << "错误: 无法获取目录路径" << std::endl;
         return;
+    }
 
-    std::cout << currentPath << std::endl;
+    std::cout << "目录树: " << currentPath;
+    if (extFilter != "*")
+    {
+        std::cout << " [过滤: *." << extFilter << "]";
+    }
+    std::cout << std::endl;
 
-    struct TreeState
+    struct SimpleState
     {
         std::string      path;
         std::string      prefix;
         HANDLE           findHandle;
         WIN32_FIND_DATAA findData;
-        bool             hasMoreSiblings;
+        bool             hasMore;
     };
 
-    std::stack<TreeState> stack;
+    std::stack<SimpleState> stack;
 
-    TreeState root;
-    root.path            = currentPath;
-    root.prefix          = "";
-    root.hasMoreSiblings = false;
-    root.findHandle      = FindFirstFileA((currentPath + "\\*").c_str(), &root.findData);
+    /// 初始化根目录
+    SimpleState root = { .path = currentPath, .prefix = "", .findHandle = NULL, .findData = {}, .hasMore = false };
+    root.findHandle  = FindFirstFileA((currentPath + "\\*").c_str(), &root.findData);
+    root.hasMore     = (root.findHandle != INVALID_HANDLE_VALUE);
 
-    if (root.findHandle != INVALID_HANDLE_VALUE)
-    {
+    if (root.hasMore)
         stack.push(root);
-    }
+
+    int dirCount = 0, fileCount = 0;
 
     while (!stack.empty())
     {
-        TreeState& current = stack.top();
+        SimpleState& current = stack.top();
 
-        if (current.findHandle != INVALID_HANDLE_VALUE)
+        if (current.hasMore)
         {
-            std::string name = current.findData.cFileName;
-            if (name != "." && name != "..")
+            std::string name        = current.findData.cFileName;
+            DWORD       attributes  = current.findData.dwFileAttributes;
+            bool        isDirectory = (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+            /// 跳过特殊目录和不符合扩展名过滤的文件
+            if (name == "." || name == ".." || (!isDirectory && !MatchFileExtension(name, extFilter)))
             {
-                /// 检查是否有兄弟节点
-                WIN32_FIND_DATAA nextData;
-                bool             hasNext = FindNextFileA(current.findHandle, &nextData) != 0;
-
-                /// 显示当前节点
-                std::cout << current.prefix << (hasNext ? "├── " : "└── ") << name;
-
-                bool isDir = (current.findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-                if (isDir)
-                    std::cout << " [DIR]";
-                std::cout << std::endl;
-
-                /// 如果是目录，立即深入遍历
-                if (isDir)
-                {
-                    TreeState newState;
-                    newState.path            = current.path + "\\" + name;
-                    newState.prefix          = current.prefix + (hasNext ? "│   " : "    ");
-                    newState.hasMoreSiblings = hasNext;
-                    newState.findHandle      = FindFirstFileA((newState.path + "\\*").c_str(), &newState.findData);
-
-                    if (newState.findHandle != INVALID_HANDLE_VALUE)
-                    {
-                        stack.push(newState);
-                        continue;
-                    }
-                }
-
-                /// 移动到下一个文件
-                if (!hasNext)
+                current.hasMore = (FindNextFileA(current.findHandle, &current.findData) != 0);
+                if (!current.hasMore && current.findHandle != INVALID_HANDLE_VALUE)
                 {
                     FindClose(current.findHandle);
-                    current.findHandle = INVALID_HANDLE_VALUE;
                 }
-                else
+                continue;
+            }
+
+            /// 检查下一个文件
+            WIN32_FIND_DATAA nextData;
+            bool             hasNext = (FindNextFileA(current.findHandle, &nextData) != 0);
+
+            /// 显示当前项
+            std::cout << current.prefix << (hasNext ? "├── " : "└── ") << name;
+            if (isDirectory)
+                std::cout << " [DIR]";
+            std::cout << std::endl;
+
+            /// 处理子目录
+            if (isDirectory)
+            {
+                dirCount++;
+                SimpleState newState;
+                newState.path       = current.path + "\\" + name;
+                newState.prefix     = current.prefix + (hasNext ? "│   " : "    ");
+                newState.findHandle = FindFirstFileA((newState.path + "\\*").c_str(), &newState.findData);
+                newState.hasMore    = (newState.findHandle != INVALID_HANDLE_VALUE);
+
+                if (newState.hasMore)
                 {
                     current.findData = nextData;
+                    current.hasMore  = hasNext;
+                    stack.push(newState);
+                    continue;
                 }
             }
             else
             {
-                /// 移动到下一个文件
-                if (FindNextFileA(current.findHandle, &current.findData) == 0)
-                {
-                    FindClose(current.findHandle);
-                    current.findHandle = INVALID_HANDLE_VALUE;
-                }
+                fileCount++;
+            }
+
+            current.findData = nextData;
+            current.hasMore  = hasNext;
+
+            if (!current.hasMore && current.findHandle != INVALID_HANDLE_VALUE)
+            {
+                FindClose(current.findHandle);
             }
         }
         else
@@ -357,19 +442,34 @@ void SimpleDirTree(const char* path = NULL)
             stack.pop();
         }
     }
+
+    std::cout << std::endl;
+    std::cout << "统计: " << dirCount << " 个目录, " << fileCount << " 个文件";
+    if (extFilter != "*")
+    {
+        std::cout << " [*." << extFilter << " 文件]";
+    }
+    std::cout << std::endl;
 }
 
 /// 测试函数
 int main()
 {
-    std::cout << "=== 真正的树形遍历（遇到目录立即深入）===" << std::endl;
-    PrintDirTree();
+    std::cout << "=== 显示所有文件 ===" << std::endl;
+    // PrintDirTree();
+    SimpleDirTree();
 
-    // std::cout << "\n=== 简化树形显示 ===" << std::endl;
-    // SimpleDirTree();
-    //
-    // std::cout << "\n=== 显示指定目录 ===" << std::endl;
-    // PrintDirTree("C:\\Windows\\System32\\drivers"); /// 显示一个较小的目录
+    // std::cout << "\n=== 只显示 .exe 文件 ===" << std::endl;
+    // PrintDirTree(NULL, "exe");
+
+    // std::cout << "\n=== 只显示 .cpp 文件 ===" << std::endl;
+    // PrintDirTree(NULL, "cpp");
+
+    // std::cout << "\n=== 只显示 .txt 文件 (简化版) ===" << std::endl;
+    // SimpleDirTree(NULL, "txt");
+
+    // std::cout << "\n=== 只显示 .h 文件 ===" << std::endl;
+    // PrintDirTree(NULL, "h");
 
     return 0;
 }
