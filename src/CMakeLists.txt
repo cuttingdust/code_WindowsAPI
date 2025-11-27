@@ -107,6 +107,7 @@ add_subdirectory(WindowsA2W)
 add_subdirectory(WindowsPrintDir)
 ################################################
 add_subdirectory(WindowsTestService)
+add_subdirectory(WindowsServiceFramwork)
 
 # 拷贝assert目录到输出目录
 set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)
