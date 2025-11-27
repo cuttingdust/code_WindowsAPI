@@ -70,7 +70,8 @@ include(CommonTools)
 
 #############################################
 add_subdirectory(CreateProcess)
-add_subdirectory(CreateToolhelp32Snapshot)
+add_subdirectory(CreateToolhelp32SnapshotToProcess)
+add_subdirectory(CreateToolhelp32SnapshotToModule)
 add_subdirectory(ExitProcess)
 add_subdirectory(TerminateProcess)
 add_subdirectory(MemChange)

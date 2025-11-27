@@ -4,7 +4,7 @@
 
 // #include <Locale.h>
 
-void ShowProcessList(int maxCount = 50)
+void ShowModuleList(int maxCount = 50)
 {
     PROCESSENTRY32W pe32;
     pe32.dwSize = sizeof(pe32);
@@ -56,7 +56,7 @@ int main()
     // setlocale(LC_ALL, "zh_CN.UTF-8");
 
     printf("=== 进程列表 (最多显示50个) ===\n");
-    ShowProcessList(500);
+    ShowModuleList(500);
 
     printf("\n按回车键退出...");
     getchar();
