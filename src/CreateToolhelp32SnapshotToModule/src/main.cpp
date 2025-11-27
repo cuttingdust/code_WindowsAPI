@@ -127,3 +127,87 @@ int main()
     getchar(); // 等待按键
     return 0;
 }
+
+//////////////////////////////////////////////////////////////////
+
+
+#include <dbghelp.h>
+#include <vector>
+#include <string>
+
+#pragma comment(lib, "dbghelp.lib")
+
+void CheckDLLDependencies(const char* dllName);
+
+
+void CheckPEImports()
+{
+    printf("=== PE导入表分析 ===\n");
+
+    HMODULE           hModule   = GetModuleHandle(NULL);
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)hModule;
+    PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hModule + dosHeader->e_lfanew);
+
+    PIMAGE_IMPORT_DESCRIPTOR importDesc =
+            (PIMAGE_IMPORT_DESCRIPTOR)((BYTE*)hModule +
+                                       ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]
+                                               .VirtualAddress);
+
+    while (importDesc->Name != 0)
+    {
+        const char* dllName = (const char*)((BYTE*)hModule + importDesc->Name);
+
+        /// 检查DLL是否存在
+        HMODULE hTest = LoadLibraryExA(dllName, NULL, LOAD_LIBRARY_AS_DATAFILE);
+        if (hTest == NULL)
+        {
+            printf("❌ 缺失导入DLL: %s\n", dllName);
+
+            /// 进一步检查该DLL的依赖
+            CheckDLLDependencies(dllName);
+        }
+        else
+        {
+            printf("✅ 导入DLL正常: %s\n", dllName);
+            FreeLibrary(hTest);
+        }
+
+        importDesc++;
+    }
+}
+
+void CheckDLLDependencies(const char* dllName)
+{
+    /// 检查这个缺失DLL的依赖链
+    char searchPath[MAX_PATH];
+    GetSystemDirectoryA(searchPath, MAX_PATH);
+
+    char fullPath[MAX_PATH];
+    sprintf_s(fullPath, "%s\\%s", searchPath, dllName);
+
+    /// 使用LoadLibraryEx来获取更详细的错误信息
+    HMODULE hLib = LoadLibraryExA(fullPath, NULL, DONT_RESOLVE_DLL_REFERENCES);
+    if (hLib == NULL)
+    {
+        DWORD error = GetLastError();
+        switch (error)
+        {
+            case ERROR_MOD_NOT_FOUND:
+                printf("   ↳ 系统找不到指定的文件\n");
+                break;
+            case ERROR_DLL_NOT_FOUND:
+                printf("   ↳ 依赖的DLL缺失\n");
+                break;
+            case ERROR_BAD_EXE_FORMAT:
+                printf("   ↳ 文件格式错误或架构不匹配\n");
+                break;
+            default:
+                printf("   ↳ 错误代码: 0x%X\n", error);
+                break;
+        }
+    }
+    else
+    {
+        FreeLibrary(hLib);
+    }
+}
