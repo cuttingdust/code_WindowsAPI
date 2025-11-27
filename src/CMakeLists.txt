@@ -105,7 +105,8 @@ add_subdirectory(WindowsEncrypt)
 add_subdirectory(WindowsMemPicture)
 add_subdirectory(WindowsA2W)
 add_subdirectory(WindowsPrintDir)
-
+################################################
+add_subdirectory(WindowsTestService)
 
 # 拷贝assert目录到输出目录
 set(ASSERT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assert)

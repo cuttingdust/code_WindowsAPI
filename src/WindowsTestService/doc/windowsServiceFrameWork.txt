@@ -1,0 +1,277 @@
+# SCM 是什么  Windows服务框架是什么
+## 1. SCM - 服务控制管理器
+### SCM 是什么？
+SCM (Service Control Manager) 是 Windows 操作系统的核心组件，负责管理所有系统服务和驱动服务的生命周期。
+SCM 的职责：
+// SCM 就像服务的"总管家"
+┌──────────────────────────────────────────┐
+│              SCM                         │
+│  ┌─────────────┬───────────────────────┐ │
+│  │ 启动服务     │ 停止服务             │ │
+│  ├─────────────┼───────────────────────┤ │
+│  │ 暂停/继续    │ 状态监控             │ │
+│  ├─────────────┼───────────────────────┤ │
+│  │ 依赖管理     │ 安全验证             │ │
+│  └─────────────┴───────────────────────┘ │
+└──────────────────────────────────────────┘
+
+## SCM 的工作流程：
+// 1. 你的程序调用
+StartServiceCtrlDispatcher(entryTable);
+
+// 2. SCM 接收到请求
+// 3. SCM 创建服务进程
+// 4. SCM 调用你的 ServiceMain 函数
+// 5. 你的服务向 SCM 注册控制处理器
+// 6. SCM 管理服务状态
+
+## SCM 相关API：
+/// 服务程序使用的API
+StartServiceCtrlDispatcher()  /// 连接SCM
+RegisterServiceCtrlHandler()  /// 注册控制处理器
+SetServiceStatus()           /// 向SCM报告状态
+
+/// 管理工具使用的API  
+OpenSCManager()              /// 打开SCM
+CreateService()              /// 创建服务
+StartService()               /// 启动服务
+ControlService()             /// 控制服务（停止、暂停等）
+
+## 2. Windows 服务框架
+### Windows 服务框架组成：
+#### 1. 服务程序结构
+// 必需的服务框架组件
+#include <windows.h>
+
+// 1. 服务主函数（入口点）
+void WINAPI ServiceMain(int argc, char** argv);
+
+// 2. 控制处理器函数
+void WINAPI CtrlHandler(DWORD dwControl);
+
+// 3. 服务状态管理
+SERVICE_STATUS        serviceStatus;
+SERVICE_STATUS_HANDLE hServiceStatus;
+
+// 4. 服务分派表
+SERVICE_TABLE_ENTRY serviceTable[] = {
+    { L"MyService", ServiceMain },
+    { NULL, NULL }  // 结束标记
+};
+
+#### 2. 完整的服务框架流程
+// 服务框架完整示例
+class WindowsServiceFramework {
+private:
+    // 服务状态管理
+    SERVICE_STATUS m_status;
+    SERVICE_STATUS_HANDLE m_statusHandle;
+    bool m_isRunning;
+    
+public:
+    // 框架初始化
+    bool Initialize() {
+        // 1. 设置服务分派表
+        SERVICE_TABLE_ENTRY serviceTable[] = {
+            { L"MyService", ServiceMainStarter },
+            { NULL, NULL }
+        };
+        
+        // 2. 连接到SCM
+        return StartServiceCtrlDispatcher(serviceTable);
+    }
+    
+    // 服务主函数（框架核心）
+    static void WINAPI ServiceMainStarter(DWORD argc, LPTSTR* argv) {
+        // 创建服务实例
+        WindowsServiceFramework service;
+        
+        // 注册控制处理器
+        service.m_statusHandle = RegisterServiceCtrlHandler(
+            L"MyService", 
+            CtrlHandlerStarter
+        );
+        
+        // 报告运行状态
+        service.m_status.dwCurrentState = SERVICE_RUNNING;
+        SetServiceStatus(service.m_statusHandle, &service.m_status);
+        
+        // 执行服务主逻辑
+        service.Run();
+    }
+    
+    // 控制处理器
+    static void WINAPI CtrlHandlerStarter(DWORD controlCode) {
+        switch (controlCode) {
+            case SERVICE_CONTROL_STOP:
+                // 处理停止请求
+                break;
+            case SERVICE_CONTROL_PAUSE:
+                // 处理暂停请求
+                break;
+            case SERVICE_CONTROL_CONTINUE:
+                // 处理继续请求
+                break;
+            case SERVICE_CONTROL_INTERROGATE:
+                // 处理状态查询
+                break;
+        }
+    }
+    
+    // 服务主逻辑
+    void Run() {
+        m_isRunning = true;
+        while (m_isRunning) {
+            // 服务的主要工作循环
+            PerformServiceWork();
+            Sleep(1000);  // 避免CPU占用过高
+        }
+    }
+};
+
+
+#### 3. 服务安装和管理框架
+// 服务安装框架
+class ServiceInstaller {
+public:
+    static bool InstallService(const wchar_t* serviceName, 
+                              const wchar_t* displayName,
+                              DWORD serviceType = SERVICE_WIN32_OWN_PROCESS,
+                              DWORD startType = SERVICE_AUTO_START) {
+        
+        // 1. 打开SCM管理器
+        SC_HANDLE hSCM = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+        
+        // 2. 创建服务
+        SC_HANDLE hService = CreateService(
+            hSCM, serviceName, displayName,
+            SERVICE_ALL_ACCESS, serviceType,
+            startType, SERVICE_ERROR_NORMAL,
+            GetExecutablePath(), NULL, NULL,
+            NULL, NULL, NULL
+        );
+        
+        // 3. 清理资源
+        if (hService) CloseServiceHandle(hService);
+        if (hSCM) CloseServiceHandle(hSCM);
+        
+        return hService != NULL;
+    }
+    
+    static bool UninstallService(const wchar_t* serviceName) {
+        // 打开SCM和服务，然后删除
+        SC_HANDLE hSCM = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+        SC_HANDLE hService = OpenService(hSCM, serviceName, DELETE);
+        
+        bool success = DeleteService(hService);
+        
+        if (hService) CloseServiceHandle(hService);
+        if (hSCM) CloseServiceHandle(hSCM);
+        
+        return success;
+    }
+};
+
+
+## 3. 服务框架的层次结构
+┌─────────────────────────────────────────┐
+│           应用程序/管理工具             │ ← sc.exe, services.msc
+├─────────────────────────────────────────┤
+│             服务框架 API                │ ← advapi32.dll
+├─────────────────────────────────────────┤
+│           SCM (服务控制管理器)          │ ← services.exe
+├─────────────────────────────────────────┤
+│             服务进程                    │ ← 你的服务程序
+│   ┌─────────────────────────────────┐   │
+│   │       服务主线程                │   │
+│   │  ┌─────────────────────────┐    │   │
+│   │  │     ServiceMain         │    │   │
+│   │  └─────────────────────────┘    │   │
+│   │  ┌─────────────────────────┐    │   │
+│   │  │     CtrlHandler         │    │   │
+│   │  └─────────────────────────┘    │   │
+│   └─────────────────────────────────┘   │
+└─────────────────────────────────────────┘ 
+
+## 4. 实际开发中的服务框架
+### 使用现代C++的服务框架
+#include <windows.h>
+#include <string>
+#include <functional>
+
+class ModernServiceFramework {
+public:
+    using ServiceMainFunc = std::function<void()>;
+    using ControlHandlerFunc = std::function<void(DWORD)>;
+    
+    ModernServiceFramework(const std::wstring& serviceName) 
+        : m_serviceName(serviceName) {}
+    
+    // 设置服务回调函数
+    void SetServiceMain(ServiceMainFunc func) { m_serviceMain = func; }
+    void SetControlHandler(ControlHandlerFunc func) { m_controlHandler = func; }
+    
+    // 运行服务
+    bool Run() {
+        SERVICE_TABLE_ENTRY serviceTable[] = {
+            { const_cast<LPWSTR>(m_serviceName.c_str()), ServiceMainEntry },
+            { NULL, NULL }
+        };
+        
+        return StartServiceCtrlDispatcher(serviceTable);
+    }
+    
+private:
+    static ModernServiceFramework* s_instance;
+    std::wstring m_serviceName;
+    ServiceMainFunc m_serviceMain;
+    ControlHandlerFunc m_controlHandler;
+    
+    static void WINAPI ServiceMainEntry(DWORD argc, LPWSTR* argv) {
+        if (s_instance && s_instance->m_serviceMain) {
+            s_instance->RegisterWithSCM();
+            s_instance->m_serviceMain();
+        }
+    }
+    
+    static void WINAPI ControlHandlerEntry(DWORD controlCode) {
+        if (s_instance && s_instance->m_controlHandler) {
+            s_instance->m_controlHandler(controlCode);
+        }
+    }
+    
+    void RegisterWithSCM() {
+        // 向SCM注册控制处理器
+        m_statusHandle = RegisterServiceCtrlHandler(
+            m_serviceName.c_str(), 
+            ControlHandlerEntry
+        );
+    }
+};
+
+// 使用示例
+ModernServiceFramework service(L"MyModernService");
+service.SetServiceMain([]() {
+    // 服务主逻辑
+    while (true) {
+        // 执行工作任务
+        Sleep(5000);
+    }
+});
+
+service.SetControlHandler([](DWORD controlCode) {
+    switch (controlCode) {
+        case SERVICE_CONTROL_STOP:
+            // 清理资源并退出
+            break;
+    }
+});
+
+service.Run();
+
+## 总结
+* SCM：Windows的服务"大脑"，负责所有服务的调度和管理
+
+* 服务框架：一套标准的编程模型，让你的程序能够与SCM交互，成为合格的系统服务
+
+* 理解这两个概念对于开发Windows服务至关重要！
