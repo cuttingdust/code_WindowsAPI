@@ -1,4 +1,5 @@
-﻿#include <stdio.h>
+﻿#include <iostream>
+#include <stdio.h>
 #include <windows.h>
 
 /// 正确定义MessageBoxW的函数指针类型
@@ -12,10 +13,11 @@ int main(void)
     {
         /// 获取函数指针前需要检查是否获取成功
         // MESSAGEBOXW func = (MESSAGEBOXW)::GetProcAddress(hModule, "MessageBoxW");
-        FARPROC func = (FARPROC)::GetProcAddress(hModule, "?go");
+        FARPROC func = (FARPROC)::GetProcAddress(hModule, "?go@@YAXXZ");
         if (func != NULL)
         {
             // func(NULL, L"测试导入", L"标题", NULL); /// 调用函数
+            func();
         }
         else
         {

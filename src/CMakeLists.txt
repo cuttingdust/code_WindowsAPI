@@ -78,8 +78,10 @@ add_subdirectory(MemChange)
 add_subdirectory(MemChange_Testor)
 add_subdirectory(CreateMutex)
 add_subdirectory(ConsoleHide)
+###############################################
 add_subdirectory(LoadLibrary)
 add_subdirectory(LoadLibraryTest)
+add_subdirectory(DLLMain)
 ###############################################
 add_subdirectory(CreateThread)
 add_subdirectory(ExitThread)
