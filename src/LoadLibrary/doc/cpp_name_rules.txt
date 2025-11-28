@@ -1,0 +1,180 @@
+# C++ 里面函数命名规则
+
+#include <stdio.h>
+#include <windows.h>
+
+///如果需要生成可供外部程序调用的函数，必须用dllexport
+_declspec(dllexport) void go()
+{
+    MessageBox(NULL, L"我是来自dll", L"hello Dll", MB_OK);
+}
+
+这个 ?go@@YAXXZ 
+是 C++ 名称修饰 的结果，里面包含了丰富的类型信息。让我详细解释这个命名的"讲究"：
+
+
+## 名称修饰的组成解析
+?go@@YAXXZ 可以分解为：
+
+部分	含义	说明
+?		开始标志	表示这是C++修饰名称
+go		函数原名	您的函数名
+@@YA	调用约定	Y=函数, A=__cdecl
+X		参数类型	X=void (无参数)
+X		返回类型	X=void (无返回值)
+Z		结束标志	名称结束
+
+## 详细的修饰规则
+### 调用约定编码：
+A = __cdecl (C调用约定)
+
+I = __fastcall
+
+E = __vectorcall
+
+G = __stdcall
+
+### 类型编码：
+X = void
+
+D = char
+
+E = unsigned char
+
+F = short
+
+G = unsigned short
+
+H = int
+
+I = unsigned int
+
+J = long
+
+K = unsigned long
+
+M = float
+
+N = double
+
+_N = bool
+
+PA = 指针 (如 PAD = char*)
+
+QAD = const char*
+
+## 更多示例
+### 示例1：带参数的函数
+// 原始函数
+void go(int a, char b)
+
+// 修饰后名称
+?go@@YAXHD@Z
+// 解析: Y=函数, A=__cdecl, X=void返回, H=int, D=char
+
+### 示例2：返回值的函数
+// 原始函数  
+int calculate(float x)
+
+// 修饰后名称
+?calculate@@YAHM@Z
+// 解析: Y=函数, A=__cdecl, H=int返回, M=float参数
+
+
+### 示例3：类成员函数
+class MyClass {
+public:
+    void method();
+};
+
+// 修饰后名称  
+?method@MyClass@@QAEXXZ
+// 解析: @MyClass=类名, QAE=thiscall调用约定
+
+## 为什么需要名称修饰？
+ 名称修饰解决了C++的几个特性：
+
+### 1. 函数重载
+cpp
+void go();              // ?go@@YAXXZ
+void go(int);           // ?go@@YAXH@Z  
+void go(int, char);     // ?go@@YAXHD@Z
+每个重载版本都有唯一的修饰名。
+
+### 2. 命名空间和类作用域
+cpp
+namespace MyNS {
+    void go();          // ?go@MyNS@@YAXXZ
+}
+
+class MyClass {
+    void go();          // ?go@MyClass@@QAEXXZ
+};
+
+### 2. 命名空间和类作用域
+namespace MyNS {
+    void go();          // ?go@MyNS@@YAXXZ
+}
+
+class MyClass {
+    void go();          // ?go@MyClass@@QAEXXZ
+};
+
+### 3. 模板特化
+template<typename T>
+void go(T t);           // 会有复杂的模板修饰
+
+## 查看修饰名称的方法
+### 使用 dumpbin：
+cmd
+dumpbin /exports YourDll.dll
+
+### 使用 Dependency Walker：
+图形化工具显示所有导出函数。
+
+### 使用 Visual Studio 命令：
+cmd
+undname ?go@@YAXXZ
+输出：
+
+text
+?go@@YAXXZ == void __cdecl go(void)
+
+
+## 避免名称修饰的方法
+### 方法1：使用 extern "C"（推荐）
+cpp
+extern "C" {
+    __declspec(dllexport) void go() {
+        // ...
+    }
+}
+// 导出名: go
+### 方法2：使用 .def 文件
+def
+EXPORTS
+    go
+	
+	
+### 方法3：使用特定导出宏
+// 在头文件中定义
+#ifdef __cplusplus
+#define EXPORT extern "C" __declspec(dllexport)
+#else
+#define EXPORT __declspec(dllexport)
+#endif
+
+EXPORT void go();
+
+## 总结
+?go@@YAXXZ 这个"奇怪"的名称实际上是 C++编译器的智能设计，它通过名称修饰：
+
+1. 支持重载 - 不同参数类型的同名函数有不同的修饰名
+
+2. 支持命名空间 - 包含作用域信息
+
+3. 包含类型安全 - 编码了参数和返回类型
+
+4. 包含调用约定 - 指定函数调用方式
+
+虽然看起来复杂，但这种设计确保了C++面向对象特性的正确实现。对于DLL导出，使用 extern "C" 可以避免这种复杂性，获得简单的函数名。
